@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  leaderboards:
+    build: .
+    environment:
+      - PORT=3000
+      - LB_API_KEY=${LB_API_KEY:-}
+      - LB_HMAC_SECRET=${LB_HMAC_SECRET:-}
+      - LB_ALLOWED_ORIGINS=${LB_ALLOWED_ORIGINS:-http://localhost:3000}
+      - LB_MIN_SUBMIT_INTERVAL=3
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      - ./leaderboards.db:/usr/src/app/leaderboards.db

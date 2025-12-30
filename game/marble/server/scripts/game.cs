@@ -1206,6 +1206,10 @@ function GameConnection::onFinishPoint(%this)
    // Grab the marble time (which should stop when the mode is set to Victory)
    %this.finishTime = %this.player.getMarbleTime();
 
+   %timeSec = (%this.finishTime / 1000.0);
+   %levelId = $Server::MissionFile;
+   commandToClient(%this, 'SubmitScore', %this.name, %timeSec, %levelId);
+
    // A new person finished
    $Game::ClientsFinished++;
 

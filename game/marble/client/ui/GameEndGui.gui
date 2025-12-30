@@ -73,6 +73,28 @@ function GameEndGui::onWake( %this )
    RootGui.setA( $Text::Next );
    RootGui.setB( $Text::Retry );
    RootGui.setY( $Text::Leaderboard );
+
+   // Try to request the leaderboard for the current mission (guid or mission file).
+   // We prefer guid if GameMissionInfo is available, otherwise fall back to mission file.
+   %levelId = "";
+   if (isObject(GameMissionInfo) && isObject(GameMissionInfo.getCurrentMission()))
+      %levelId = GameMissionInfo.getCurrentMission().guid;
+   if (%levelId $= "")
+      %levelId = $Server::MissionFile;
+
+   // Show a temporary message in the GE_Stats control while loading.
+   if (isObject(GE_Stats))
+   {
+      GE_Stats.clear();
+      // Add a temporary row; available GuiTextListCtrl APIs vary by build,
+      // using the common addRow syntax (id, text).
+      GE_Stats.addRow(0, "Loading leaderboard...");
+   }
+
+   // Request the leaderboard from the configured server (client-side Torque HTTP helper).
+   // LB_RequestLeaderboard(level, limit, callbackObj, callbackMethod, format)
+   // When results arrive, GameEndGui.onLeaderboardReceived will be called.
+   LB_RequestLeaderboard(%levelId, 10, %this, "onLeaderboardReceived", "text");
 }
 
 //------------------------------------------------------------------------------
