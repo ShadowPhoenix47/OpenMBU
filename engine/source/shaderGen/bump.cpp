@@ -272,7 +272,11 @@ void BumpFeat::processPix(Vector<ShaderComponent*>& componentList,
     bumpMap->constNum = Var::getTexUnitNum();     // used as texture unit num here
 
 
-    LangElement* texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
+    LangElement* texOp;
+    if (gShaderGen.mEmitGLSL)
+        texOp = new GenOp("texture2D(@, @)", bumpMap, texCoord);
+    else
+        texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
 
 
     // create bump normal

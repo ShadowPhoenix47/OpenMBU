@@ -191,18 +191,27 @@ void BaseTexFeat::processPix(Vector<ShaderComponent*>& componentList,
         diffColor->setType("float4");
         diffColor->setName("diffuseColor");
         LangElement* colorDecl = new DecOp(diffColor);
-
-        meta->addStatement(new GenOp("   @ = tex2D(@, @);\r\n",
-            colorDecl,
-            diffuseMap,
-            inTex));
+        if (gShaderGen.mEmitGLSL)
+            meta->addStatement(new GenOp("   @ = texture2D(@, @);\r\n",
+                colorDecl,
+                diffuseMap,
+                inTex));
+        else
+            meta->addStatement(new GenOp("   @ = tex2D(@, @);\r\n",
+                colorDecl,
+                diffuseMap,
+                inTex));
 
         meta->addStatement(new GenOp("   @;\r\n", assignColor(diffColor)));
         output = meta;
     }
     else
     {
-        LangElement* statement = new GenOp("tex2D(@, @)", diffuseMap, inTex);
+        LangElement* statement;
+        if (gShaderGen.mEmitGLSL)
+            statement = new GenOp("texture2D(@, @)", diffuseMap, inTex);
+        else
+            statement = new GenOp("tex2D(@, @)", diffuseMap, inTex);
         output = new GenOp("   @;\r\n", assignColor(statement));
     }
 
@@ -754,9 +763,15 @@ void ReflectCubeFeat::processPix(Vector<ShaderComponent*>& componentList,
     {
         LangElement* statement;
         if (attn)
-            statement = new GenOp("@.x * @.a * texCUBE(@, @)", attn, glossColor, cubeMap, reflectVec);
+            if (gShaderGen.mEmitGLSL)
+                statement = new GenOp("@.x * @.a * textureCube(@, @)", attn, glossColor, cubeMap, reflectVec);
+            else
+                statement = new GenOp("@.x * @.a * texCUBE(@, @)", attn, glossColor, cubeMap, reflectVec);
         else
-            statement = new GenOp("@.a * texCUBE(@, @)", glossColor, cubeMap, reflectVec);
+            if (gShaderGen.mEmitGLSL)
+                statement = new GenOp("@.a * textureCube(@, @)", glossColor, cubeMap, reflectVec);
+            else
+                statement = new GenOp("@.a * texCUBE(@, @)", glossColor, cubeMap, reflectVec);
         meta->addStatement(new GenOp("   @;\r\n", assignColor(statement, true)));
         output = meta;
     }
@@ -764,9 +779,13 @@ void ReflectCubeFeat::processPix(Vector<ShaderComponent*>& componentList,
     {
         LangElement* statement;
         if (attn)
-            statement = new GenOp("@.x * texCUBE(@, @)", attn, cubeMap, reflectVec);
+            if (gShaderGen.mEmitGLSL)
+                statement = new GenOp("@.x * textureCube(@, @)", attn, cubeMap, reflectVec);
+            else
+                statement = new GenOp("@.x * texCUBE(@, @)", attn, cubeMap, reflectVec);
         else
-            statement = new GenOp("texCUBE(@, @)", cubeMap, reflectVec);
+            if (gShaderGen.mEmitGLSL)
+                statement = new GenOp("textureCube(@, @)", cubeMap, reflectVec);
         output = new GenOp("   @;\r\n", assignColor(statement, true));
     }
 

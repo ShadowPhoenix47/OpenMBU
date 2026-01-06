@@ -84,6 +84,8 @@ private:
 
 public:
     ShaderGen();
+    // If true, generate GLSL shaders instead of HLSL
+    bool mEmitGLSL;
 
     /// vertFile and pixFile are filled in by this function.  They point to 
     /// the vertex and pixel shader files.  pixVersion is also filled in by

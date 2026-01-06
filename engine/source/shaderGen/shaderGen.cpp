@@ -25,6 +25,7 @@ ShaderGen gShaderGen;
 //----------------------------------------------------------------------------
 ShaderGen::ShaderGen()
 {
+    mEmitGLSL = false;
 }
 
 //----------------------------------------------------------------------------
@@ -48,13 +49,25 @@ void ShaderGen::generateShader(const GFXShaderFeatureData& featureData,
     static U32 shaderNum = 0;
 
     const char* shaderPath = Con::getVariable("$Pref::Video::ShaderPath");
+    // detect whether we should emit GLSL based on the chosen display device
+    const char* device = Con::getVariable("$pref::Video::displayDevice");
+    if (device && dStrcmp(device, "OpenGL") == 0)
+        mEmitGLSL = true;
     if (dStrlen(shaderPath) == 0)
     {
         shaderPath = "shaders";
     }
 
-    dSprintf(vertShaderName, sizeof(vertShaderName), "%s/shaderV%03d.hlsl", shaderPath, shaderNum);
-    dSprintf(pixShaderName, sizeof(pixShaderName), "%s/shaderP%03d.hlsl", shaderPath, shaderNum);
+    if (mEmitGLSL)
+    {
+        dSprintf(vertShaderName, sizeof(vertShaderName), "%s/shaderV%03d.glsl", shaderPath, shaderNum);
+        dSprintf(pixShaderName, sizeof(pixShaderName), "%s/shaderP%03d.glsl", shaderPath, shaderNum);
+    }
+    else
+    {
+        dSprintf(vertShaderName, sizeof(vertShaderName), "%s/shaderV%03d.hlsl", shaderPath, shaderNum);
+        dSprintf(pixShaderName, sizeof(pixShaderName), "%s/shaderP%03d.hlsl", shaderPath, shaderNum);
+    }
    // Con::printf("Generating shader %s", vertShaderName);
 
     shaderNum++;
@@ -282,8 +295,21 @@ void ShaderGen::printShaderHeader(Stream& stream)
 {
 
     const char* header1 = "//*****************************************************************************\r\n";
-    const char* header2 = "// TSE -- HLSL procedural shader                                               \r\n";
 
+    stream.write(dStrlen(header1), header1);
+    if (mEmitGLSL)
+    {
+        const char* header2 = "// TSE -- GLSL procedural shader                                               \r\n";
+        stream.write(dStrlen(header2), header2);
+        // emit a basic GLSL version directive for compatibility; callers can change as needed
+        const char* ver = "#version 120\n\n";
+        stream.write(dStrlen(ver), ver);
+    }
+    else
+    {
+        const char* header2 = "// TSE -- HLSL procedural shader                                               \r\n";
+        stream.write(dStrlen(header2), header2);
+    }                                      \r\n";
     stream.write(dStrlen(header1), header1);
     stream.write(dStrlen(header2), header2);
     stream.write(dStrlen(header1), header1);

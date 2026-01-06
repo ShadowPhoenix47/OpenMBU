@@ -181,10 +181,52 @@ void ConnectorStruct::reset()
 //--------------------------------------------------------------------------
 void ConnectorStruct::print(Stream& stream)
 {
+    // If emitting GLSL, print connector as varying declarations rather than HLSL struct
+    if (gShaderGen.mEmitGLSL) {
+        // Emit GLSL varyings instead of an HLSL connector struct
+        for (U32 i = 0; i < mElementList.size(); i++) {
+            Var* v = mElementList[i];
+            String type = v->getType();
+            // Map HLSL types to GLSL equivalents
+            if (type == "float4") type = "vec4";
+            else if (type == "float3") type = "vec3";
+            else if (type == "float2") type = "vec2";
+            else if (type == "float") type = "float";
+
+            String decl = "varying ";
+            decl += type;
+            decl += " ";
+            decl += v->getName();
+            decl += ";\r\n";
+            s.write(decl);
+        }
+        s.write("\r\n");
+    } else {
+        const char* header = "struct ";
+        const char* header2 = "\r\n{\r\n";
+        const char* footer = "};\r\n\r\n";
+
+        stream.write(dStrlen(header), header);
+        stream.write(dStrlen((char*)mName), mName);
+        stream.write(dStrlen(header2), header2);
+
+        // print out elements (HLSL style)
+        for (U32 i = 0; i < mElementList.size(); i++) {
+            U8 output[256];
+
+            Var* var = mElementList[i];
+            dSprintf((char*)output, sizeof(output), "   %s %-15s : %s;\r\n", var->type, var->name, var->connectName);
+
+            stream.write(dStrlen((char*)output), output);
+        }
+
+        stream.write(dStrlen(footer), footer);
+    }
+
+
     const char* header = "struct ";
     const char* header2 = "\r\n{\r\n";
     const char* footer = "};\r\n\r\n\r\n";
-    const char* tab = "   ";
 
 
     stream.write(dStrlen(header), header);
@@ -192,7 +234,7 @@ void ConnectorStruct::print(Stream& stream)
     stream.write(dStrlen(header2), header2);
 
 
-    // print out elements
+    // print out elements (HLSL style)
     for (U32 i = 0; i < mElementList.size(); i++)
     {
         U8 output[256];
@@ -219,6 +261,20 @@ void ConnectorStruct::print(Stream& stream)
 //--------------------------------------------------------------------------
 void VertexMainDef::print(Stream& stream)
 {
+    if (gShaderGen.mEmitGLSL) {
+        // GLSL vertex shader main
+        s.write("void main()\r\n{\r\n");
+        getBody()->print(s);
+        s.write("\r\n}\r\n\r\n");
+    } else {
+        String func;
+        func = vprintf("%s %s(%s IN)", getReturnType(), getName(), getConnector()->getName());
+        s.write(func);
+        s.write("\r\n{\r\n");
+        getBody()->print(s);
+        s.write("\r\n}\r\n\r\n");
+    }
+
     const char* opener = "ConnectData main( VertData IN";
     stream.write(dStrlen(opener), opener);
 
@@ -262,6 +318,20 @@ void VertexMainDef::print(Stream& stream)
 //--------------------------------------------------------------------------
 void PixelMainDef::print(Stream& stream)
 {
+    if (gShaderGen.mEmitGLSL) {
+        // GLSL fragment shader main
+        s.write("void main()\r\n{\r\n");
+        getBody()->print(s);
+        s.write("\r\n}\r\n\r\n");
+    } else {
+        String func;
+        func = vprintf("%s %s(%s IN)", getReturnType(), getName(), getConnector()->getName());
+        s.write(func);
+        s.write("\r\n{\r\n");
+        getBody()->print(s);
+        s.write("\r\n}\r\n\r\n");
+    }
+
     const char* opener = "Fragout main( ConnectData IN";
     stream.write(dStrlen(opener), opener);
 

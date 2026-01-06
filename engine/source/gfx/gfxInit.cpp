@@ -6,6 +6,9 @@
 #include "gfx/gfxInit.h"
 #include "gfx/Null/gfxNullDevice.h"
 
+// Define the static adapter list here (one definition across the build)
+Vector<GFXAdapter*> GFXInit::smAdapters;
+
 inline static void _GFXInitReportAdapters(Vector<GFXAdapter*>&);
 inline static void _GFXInitGetInitialRes(GFXVideoMode&, const Point2I&);
 
@@ -85,6 +88,34 @@ void GFXInit::init()
     _GFXInitReportAdapters(adapters);
     Con::printf( "" );
 }
+
+// Provide a basic adapter enumeration for non-Windows platforms
+// so that Unix builds will at least register an OpenGL adapter.
+#ifndef TORQUE_OS_WIN
+void GFXInit::enumerateAdapters()
+{
+    // If already enumerated, do nothing
+    if (smAdapters.size())
+        return;
+
+    // On Unix / other platforms, register a single OpenGL adapter
+    GFXAdapter* ogl = new GFXAdapter();
+    ogl->mIndex = 0;
+    ogl->mType = OpenGL;
+    dStrcpy(ogl->mName, "OpenGL");
+    GFXVideoMode vm;
+    vm.bitDepth = 32;
+    vm.resolution.set(800,600);
+    vm.fullScreen = false;
+    vm.refreshRate = 60;
+    ogl->mAvailableModes.push_back(vm);
+    ogl->mShaderModel = 0.0f; // unknown
+    GFXInit::smAdapters.push_back(ogl);
+
+    // Always add the Null device as a fallback
+    GFXNullDevice::enumerateAdapters( GFXInit::smAdapters );
+}
+#endif
 
 GFXAdapter* GFXInit::getAdapterOfType( GFXAdapterType type )
 {

@@ -804,18 +804,18 @@ void Platform::init()
            mTarget->resetMode();
 
       // load gl library
-//      if (!GLLoader::OpenGLInit())
-//      {
-//         DisplayErrorAlert("Unable to initialize OpenGL.");
-//         ImmediateShutdown(1);
-//      }
-//
-//      // initialize video
-//      Video::init();
-//      if ( Video::installDevice( OpenGLDevice::create() ) )
-//         Con::printf( "   OpenGL display device detected." );
-//      else
-//         Con::printf( "   OpenGL display device not detected." );
+      if (!GLLoader::OpenGLInit())
+      {
+         DisplayErrorAlert("Unable to initialize OpenGL.");
+         ImmediateShutdown(1);
+      }
+
+      // initialize video
+      Video::init();
+      if ( Video::installDevice( OpenGLDevice::create() ) )
+         Con::printf( "   OpenGL display device detected." );
+      else
+         Con::printf( "   OpenGL display device not detected." );
 
       Con::printf(" ");
    }

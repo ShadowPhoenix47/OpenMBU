@@ -18,6 +18,7 @@
 #include <SDL/SDL_syswm.h>
 #include <SDL/SDL_version.h>
 #include <SDL/SDL_opengl.h>
+#include <GL/glx.h>
 
 //------------------------------------------------------------------------------
 bool InitOpenGL()
@@ -474,14 +475,75 @@ bool OpenGLDevice::setGammaCorrection(F32 g)
 //------------------------------------------------------------------------------
 bool OpenGLDevice::setVerticalSync( bool on )
 {
-   Con::printf("WARNING: OpenGLDevice::setVerticalSync is unimplemented %s %d\n", __FILE__, __LINE__);
-   return false;
-#if 0
-   if ( !gGLState.suppSwapInterval )
-      return( false );
+   // Try to initialize available GLX swap interval extensions if we haven't yet
+   static bool swapIntervalInitialized = false;
+   static bool haveEXT = false;
+   static bool haveSGI = false;
+   static bool haveMESA = false;
 
-   return( qwglSwapIntervalEXT( on ? 1 : 0 ) );
-#endif
+   typedef void (*PFNGLXSWAPINTERVALEXTPROC)(Display*, GLXDrawable, int);
+   typedef int  (*PFNGLXSWAPINTERVALSGIPROC)(int);
+   typedef int  (*PFNGLXSWAPINTERVALMESAPROC)(unsigned int);
+
+   static PFNGLXSWAPINTERVALEXTPROC pglXSwapIntervalEXT = NULL;
+   static PFNGLXSWAPINTERVALSGIPROC pglXSwapIntervalSGI = NULL;
+   static PFNGLXSWAPINTERVALMESAPROC pglXSwapIntervalMESA = NULL;
+
+   if (!swapIntervalInitialized)
+   {
+      swapIntervalInitialized = true;
+
+      // Try common names for swap interval functions
+      pglXSwapIntervalEXT = (PFNGLXSWAPINTERVALEXTPROC)SDL_GL_GetProcAddress("glXSwapIntervalEXT");
+      if (pglXSwapIntervalEXT)
+         haveEXT = true;
+
+      pglXSwapIntervalSGI = (PFNGLXSWAPINTERVALSGIPROC)SDL_GL_GetProcAddress("glXSwapIntervalSGI");
+      if (pglXSwapIntervalSGI)
+         haveSGI = true;
+
+      pglXSwapIntervalMESA = (PFNGLXSWAPINTERVALMESAPROC)SDL_GL_GetProcAddress("glXSwapIntervalMESA");
+      if (pglXSwapIntervalMESA)
+         haveMESA = true;
+
+      gGLState.suppSwapInterval = (haveEXT || haveSGI || haveMESA);
+   }
+
+   if (!gGLState.suppSwapInterval)
+   {
+      Con::warnf("Swap interval (vsync) unsupported on this platform/driver");
+      return false;
+   }
+
+   // Call the available swap-interval function. For EXT we need the Display and Drawable
+   if (haveEXT && pglXSwapIntervalEXT)
+   {
+      SDL_SysWMinfo sysinfo;
+      SDL_VERSION(&sysinfo.version);
+      if (SDL_GetWMInfo(&sysinfo) == 0)
+      {
+         Con::warnf("Unable to query WM info for setting swap interval: %s", SDL_GetError());
+         return false;
+      }
+      Display* dpy = sysinfo.info.x11.display;
+      GLXDrawable drawable = sysinfo.info.x11.window;
+      pglXSwapIntervalEXT(dpy, drawable, on ? 1 : 0);
+      return true;
+   }
+
+   if (haveSGI && pglXSwapIntervalSGI)
+   {
+      pglXSwapIntervalSGI(on ? 1 : 0);
+      return true;
+   }
+
+   if (haveMESA && pglXSwapIntervalMESA)
+   {
+      pglXSwapIntervalMESA(on ? 1 : 0);
+      return true;
+   }
+
+   return false;
 }
 
 //------------------------------------------------------------------------------

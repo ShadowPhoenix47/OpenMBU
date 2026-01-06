@@ -323,7 +323,12 @@ void PixelSpecular::processPix(Vector<ShaderComponent*>& componentList,
             LangElement* lightMap = LangElement::find("lightMap");
             LangElement* lmCoord = LangElement::find("lmCoord");
 
-            lmColor = new GenOp("tex2D(@, @)", lightMap, lmCoord);
+            LangElement* lmTex;
+            if (gShaderGen.mEmitGLSL)
+                lmTex = new GenOp("texture2D(@, @)", lightMap, lmCoord);
+            else
+                lmTex = new GenOp("tex2D(@, @)", lightMap, lmCoord);
+            lmColor = lmTex;
         }
 
         final = new GenOp("@ * @", specMul, lmColor);

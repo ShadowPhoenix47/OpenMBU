@@ -14,13 +14,16 @@
 
 #include "gfx/Null/gfxNullDevice.h"
 
+#include "gfx/OpenGL/gfxOpenGLDevice.h"
+
 #ifdef TORQUE_OS_WIN
 #include "platformWin32/platformWin32.h"
 #endif
 
 #include "console/console.h"
 
-Vector<GFXAdapter*> GFXInit::smAdapters;
+// extern declarations for platform-specific adapter enumeration are in their
+// respective implementation files.
 
 //extern void enumerateD3D8Adapters(Vector<GFXAdapter*>& adaptorList);
 //extern void createD3D8Instance(GFXDevice** device, U32 adapterIndex);
@@ -59,6 +62,9 @@ GFXDevice *GFXInit::createDevice( GFXAdapter *adapter )
 //            createD3D8Instance( &temp, adapter->mIndex );
 //            break;
 #endif
+        case OpenGL :
+            temp = GFXOpenGLDevice::createInstance( adapter->mIndex );
+            break;
         case NullDevice :
             temp = GFXNullDevice::createInstance( adapter->mIndex );
             break;
